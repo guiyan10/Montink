@@ -1,0 +1,17 @@
+Array
+(
+    [cliente_nome] => jjj
+    [cliente_email] => guiyan.leite@gmail.com
+    [cliente_telefone] => 12991293155
+    [cep] => 12051250
+    [logradouro] => casa
+    [numero] => 1231
+    [complemento] => casa 
+    [bairro] => bairro
+    [cidade] => cidade 
+    [uf] => SP
+    [subtotal] => 200
+    [frete] => 0
+    [total] => 200
+    [desconto] => 0
+)
