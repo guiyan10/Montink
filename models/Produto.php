@@ -109,32 +109,26 @@ class Produto extends Model {
     
     public function find($id) {
         try {
-            $sql = "SELECT p.*, GROUP_CONCAT(CONCAT(e.variacao, ':', e.quantidade) SEPARATOR '|') as variacoes 
-                    FROM produtos p 
-                    LEFT JOIN estoque e ON p.id = e.produto_id 
-                    WHERE p.id = ? 
-                    GROUP BY p.id";
+            // Primeiro, busca os dados básicos do produto
+            $sql = "SELECT * FROM produtos WHERE id = ?";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$id]);
             $produto = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($produto) {
-                // Processa as variações
-                $variacoes = [];
-                if ($produto['variacoes']) {
-                    foreach (explode('|', $produto['variacoes']) as $var) {
-                        list($nome, $quantidade) = explode(':', $var);
-                        $variacoes[] = [
-                            'nome' => $nome,
-                            'quantidade' => $quantidade
-                        ];
-                    }
-                }
+                // Busca as variações do produto
+                $sql = "SELECT variacao, quantidade FROM estoque WHERE produto_id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$id]);
+                $variacoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Adiciona as variações ao array do produto
                 $produto['variacoes'] = $variacoes;
             }
             
             return $produto;
         } catch (Exception $e) {
+            error_log("Erro ao buscar produto: " . $e->getMessage());
             throw $e;
         }
     }

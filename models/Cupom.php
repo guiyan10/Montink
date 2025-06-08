@@ -13,14 +13,24 @@ class Cupom extends Model {
             $query = "SELECT * FROM cupons 
                      WHERE codigo = :codigo 
                      AND validade > NOW() 
-                     AND valor_minimo <= :subtotal";
+                     AND valor_minimo <= :subtotal
+                     AND ativo = 1";
             
             $stmt = $this->getConnection()->prepare($query);
             $stmt->bindParam(":codigo", $codigo);
             $stmt->bindParam(":subtotal", $subtotal);
             $stmt->execute();
             
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $cupom = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($cupom) {
+                // Calcula o valor do desconto
+                $desconto = min($cupom['valor_desconto'], $subtotal);
+                $cupom['valor_desconto'] = $desconto;
+                return $cupom;
+            }
+            
+            return false;
         } catch (Exception $e) {
             error_log("Erro ao validar cupom: " . $e->getMessage());
             return false;

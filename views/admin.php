@@ -124,6 +124,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
+<!-- Alert Placeholder -->
+<div id="alertPlaceholder"></div>
+
+<?php if (isset($_SESSION['alert'])): ?>
+    <div class="alert alert-<?php echo $_SESSION['alert']['type']; ?> alert-dismissible fade show" role="alert">
+        <?php echo $_SESSION['alert']['message']; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php unset($_SESSION['alert']); ?>
+<?php endif; ?>
+
 <div class="row">
     <div class="col-md-3">
         <div class="list-group">
@@ -163,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="card-title">Produtos</h5>
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProduto">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoProduto">
                                 <i class="fas fa-plus"></i> Novo Produto
                             </button>
                         </div>
@@ -185,10 +196,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <td><?php echo Utils::formatarPreco($prod['preco'] ?? 0); ?></td>
                                         <td>
                                             <button class="btn btn-sm btn-primary" 
-                                                    onclick="editarProduto(<?php echo $prod['id']; ?>)" data-bs-toggle="modal" data-bs-target="#modalProduto">
+                                                    onclick="editarProduto(<?php echo $prod['id']; ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <a href="index.php?page=admin&action_type=excluir_produto&id=<?php echo $prod['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir este produto?')">
+                                            <a href="index.php?page=admin&action_type=excluir_produto&id=<?php echo $prod['id']; ?>" 
+                                               class="btn btn-sm btn-danger" 
+                                               onclick="return confirm('Tem certeza que deseja excluir este produto?')">
                                                 <i class="fas fa-trash"></i>
                                             </a>
                                         </td>
@@ -337,8 +350,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<!-- Modal Produto -->
-<div class="modal fade" id="modalProduto" tabindex="-1">
+<!-- Modal Novo Produto -->
+<div class="modal fade" id="modalNovoProduto" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -346,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="formProduto" action="index.php?page=admin" method="POST">
+                <form id="formNovoProduto" action="index.php?page=admin" method="POST">
                     <input type="hidden" name="action" value="criar">
                     
                     <div class="mb-3">
@@ -367,7 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <div class="mb-3">
                         <label class="form-label">Variações</label>
-                        <div id="variacoesProduto">
+                        <div id="variacoesNovoProduto">
                             <div class="variacao-item row mb-2">
                                 <div class="col-md-6">
                                     <input type="text" class="form-control" name="variacoes[0][nome]" placeholder="Nome da Variação" required>
@@ -380,12 +393,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-secondary btn-sm" id="addVariacaoProduto"><i class="fas fa-plus"></i> Adicionar Variação</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="addVariacaoNovoProduto"><i class="fas fa-plus"></i> Adicionar Variação</button>
                     </div>
                     
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Salvar Produto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Produto -->
+<div class="modal fade" id="modalEditarProduto" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Produto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarProduto" action="index.php?page=admin" method="POST">
+                    <input type="hidden" name="action" value="atualizar">
+                    <input type="hidden" name="id" id="edit_produto_id">
+                    
+                    <div class="mb-3">
+                        <label for="edit_nome" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="edit_nome" name="nome" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_preco" class="form-label">Preço</label>
+                        <input type="number" class="form-control" id="edit_preco" name="preco" 
+                               step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_descricao" class="form-label">Descrição</label>
+                        <textarea class="form-control" id="edit_descricao" name="descricao" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Variações</label>
+                        <div id="variacoesEditarProduto">
+                            <!-- Variações serão adicionadas dinamicamente -->
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="addVariacaoEditarProduto"><i class="fas fa-plus"></i> Adicionar Variação</button>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                     </div>
                 </form>
             </div>
@@ -456,9 +516,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-// Função para exibir alerta
-function showAlert(message, type) {
-    const alertPlaceholder = document.getElementById('alertPlaceholder');
+// Funções globais
+window.showAlert = function(message, type) {
+    let alertPlaceholder = document.getElementById('alertPlaceholder');
+    
+    // Se o elemento não existir, criar um
+    if (!alertPlaceholder) {
+        alertPlaceholder = document.createElement('div');
+        alertPlaceholder.id = 'alertPlaceholder';
+        // Inserir após o título
+        const title = document.querySelector('h1.mb-4');
+        if (title) {
+            title.parentNode.insertBefore(alertPlaceholder, title.nextSibling);
+        } else {
+            document.body.insertBefore(alertPlaceholder, document.body.firstChild);
+        }
+    }
+    
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
         <div class="alert alert-${type} alert-dismissible fade show" role="alert">
@@ -473,10 +547,9 @@ function showAlert(message, type) {
     setTimeout(() => wrapper.remove(), 5000);
 }
 
-// Helper function to escape HTML entities for displaying data
-function htmlspecialchars(str) {
+window.htmlspecialchars = function(str) {
     if (typeof str !== 'string') {
-        return str; // Return non-string values as is
+        return str;
     }
     const map = {
         '&': '&amp;',
@@ -485,373 +558,342 @@ function htmlspecialchars(str) {
         '"': '&quot;',
         "'": '&#039;'
     };
-    return str.replace(/[&<>\umerable\'\"]/g, function(m) { return map[m]; });
+    return str.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM fully loaded and parsed');
-
-    const variacaoSelect = document.getElementById('variacao');
-    const quantidadeInput = document.getElementById('quantidade');
+window.editarProduto = function(id) {
+    console.log('Editando produto ID:', id);
     
-    if (variacaoSelect && quantidadeInput) {
-        variacaoSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const quantidadeDisponivel = selectedOption.dataset.quantidade;
+    // Limpa o formulário
+    const form = document.getElementById('formEditarProduto');
+    form.reset();
+    
+    // Limpa as variações
+    const variacoesDiv = document.getElementById('variacoesEditarProduto');
+    variacoesDiv.innerHTML = '';
+    
+    // Busca os dados do produto
+    fetch(`actions/produto.php?action=buscar&id=${id}`)
+    .then(response => response.json())
+    .then(data => {
+        console.log('Dados recebidos:', data);
+        
+        if (data.success) {
+            const produto = data.data;
             
-            quantidadeInput.max = quantidadeDisponivel;
-            if (parseInt(quantidadeInput.value) > parseInt(quantidadeDisponivel)) {
-                quantidadeInput.value = quantidadeDisponivel;
-            }
-        });
-    }
-
-    // --- Produtos --- //
-
-    // Adicionar/Remover variação no formulário de produto
-    const addVariacaoButton = document.getElementById('addVariacaoProduto');
-    if (addVariacaoButton) {
-        addVariacaoButton.addEventListener('click', function() {
-             console.log('Add Variação button clicked');
-            const variacoesDiv = document.getElementById('variacoesProduto');
-            const index = variacoesDiv.querySelectorAll('.variacao-item').length;
-            const newItem = `
-                <div class=\"variacao-item row mb-2\">\n
-                    <div class=\"col-md-6\">\n
-                        <input type=\"text\" class=\"form-control\" name=\"variacoes[${index}][nome]\" placeholder=\"Nome da Variação\" required>\n
-                    </div>\n
-                    <div class=\"col-md-4\">\n
-                        <input type=\"number\" class=\"form-control\" name=\"variacoes[${index}][quantidade]\" placeholder=\"Quantidade\" min=\"0\" required>\n
-                    </div>\n
-                    <div class=\"col-md-2\">\n
-                        <button type=\"button\" class=\"btn btn-danger remover-variacao\"><i class=\"fas fa-times\"></i></button>\n
-                    </div>\n
-                </div>
-            `;
-            variacoesDiv.insertAdjacentHTML('beforeend', newItem);
-        });
-    }
-
-    const variacoesProdutoDiv = document.getElementById('variacoesProduto');
-    if (variacoesProdutoDiv) {
-        variacoesProdutoDiv.addEventListener('click', function(e) {
-            console.log('Variações div clicked', e.target);
-            if (e.target.classList.contains('remover-variacao') || e.target.parentElement.classList.contains('remover-variacao')) {
-                 console.log('Remover Variação button clicked');
-                const itemToRemove = e.target.closest('.variacao-item');
-                if (itemToRemove) {
-                    itemToRemove.remove();
-                }
-            }
-        });
-    }
-
-    // Tratar submissão do formulário de produto via AJAX
-    const formProduto = document.getElementById('formProduto');
-    if (formProduto) {
-        console.log('formProduto element found');
-        // formProduto.addEventListener('submit', function(e) {
-        //     console.log('Product form submitted');
-        //     e.preventDefault();
-        //     const form = e.target;
-        //     const formData = new FormData(form);
+            // Preenche o formulário
+            document.getElementById('edit_produto_id').value = produto.id;
+            document.getElementById('edit_nome').value = produto.nome;
+            document.getElementById('edit_preco').value = produto.preco;
+            document.getElementById('edit_descricao').value = produto.descricao;
             
-        //     fetch(form.action, {
-        //         method: form.method,
-        //         body: formData
-        //     })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.success) {
-        //             showAlert(data.message, 'success');
-        //             // Fechar modal e recarregar lista de produtos (opcional)
-        //             const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
-        //             modal.hide();
-        //             location.reload(); // Recarrega a página para ver a lista atualizada
-        //         } else {
-        //             showAlert(data.message, 'danger');
-        //         }
-        //     })
-        //     .catch(error => {
-        //         console.error('Erro:', error);
-        //         showAlert('Ocorreu um erro ao processar a requisição.', 'danger');
-        //     });
-        // });
-    } else {
-         console.log('formProduto element NOT found');
-    }
-
-    // Função para editar produto (carregar dados no modal)
-    function editarProduto(id) {
-        // Reset form before populating for edit
-        resetProductForm(); // Ensure form is reset first
-
-        fetch(`actions/produto.php?action=buscar&id=${id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const produto = data.data;
-                const modal = new bootstrap.Modal(document.getElementById('modalProduto'));
-                const form = document.getElementById('formProduto');
-                
-                // Update modal title
-                modal._element.querySelector('.modal-title').textContent = 'Editar Produto';
-
-                // Set the action type to 'atualizar' and add the product ID
-                form.querySelector('input[name="action"]').value = 'atualizar';
-                let idInput = form.querySelector('input[name="id"]');
-                if (!idInput) {
-                    idInput = document.createElement('input');
-                    idInput.type = 'hidden';
-                    idInput.name = 'id';
-                    form.appendChild(idInput);
-                }
-                idInput.value = produto.id;
-                
-                // Preenche os campos do formulário
-                form.querySelector('input[name="nome"]').value = produto.nome;
-                form.querySelector('input[name="preco"]').value = produto.preco;
-                form.querySelector('textarea[name="descricao"]').value = produto.descricao;
-                
-                // Preenche as variações existentes
-                const variacoesDiv = document.getElementById('variacoesProduto');
-                variacoesDiv.innerHTML = '<h6>Variações de Estoque</h6>'; // Limpa variações antigas
-                
-                if (produto.variacoes && produto.variacoes.length > 0) {
-                    produto.variacoes.forEach((variacao, index) => {
-                        const newItem = `
-                            <div class=\"variacao-item row mb-2\">\n
-                                <div class=\"col-md-6\">\n
-                                    <input type=\"text\" class=\"form-control\" name=\"variacoes[${index}][nome]\" placeholder=\"Nome da Variação\" value=\"${htmlspecialchars(variacao.nome)}\" required>\n
-                                </div>\n
-                                <div class=\"col-md-4\">\n
-                                    <input type=\"number\" class=\"form-control\" name=\"variacoes[${index}][quantidade]\" placeholder=\"Quantidade\" value=\"${variacao.quantidade}\" min=\"0\" required>\n
-                                </div>\n
-                                <div class=\"col-md-2\">\n
-                                    <button type=\"button\" class=\"btn btn-danger remover-variacao\"><i class=\"fas fa-times\"></i></button>\n
-                                </div>\n
+            // Preenche as variações
+            if (produto.variacoes && produto.variacoes.length > 0) {
+                produto.variacoes.forEach((variacao, index) => {
+                    const newItem = `
+                        <div class="variacao-item row mb-2">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="variacoes[${index}][nome]" 
+                                       placeholder="Nome da Variação" value="${htmlspecialchars(variacao.variacao)}" required>
                             </div>
-                        `;
-                        variacoesDiv.insertAdjacentHTML('beforeend', newItem);
-                    });
-                } else {
-                    // Add at least one variation field if none exist
-                     addDefaultVariacaoField(variacoesDiv);
-                }
-
-                modal.show();
+                            <div class="col-md-4">
+                                <input type="number" class="form-control" name="variacoes[${index}][quantidade]" 
+                                       placeholder="Quantidade" value="${variacao.quantidade}" min="0" required>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger remover-variacao">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    variacoesDiv.insertAdjacentHTML('beforeend', newItem);
+                });
             } else {
-                showAlert(data.message, 'danger');
+                // Se não houver variações, adiciona um campo vazio
+                addDefaultVariacaoField(variacoesDiv);
             }
-        })
-        .catch(error => {
-            console.error('Erro:', error);
-            showAlert('Ocorreu um erro ao buscar dados do produto.', 'danger');
+
+            // Abre o modal
+            const modal = new bootstrap.Modal(document.getElementById('modalEditarProduto'));
+            modal.show();
+        } else {
+            showAlert(data.message || 'Erro ao carregar dados do produto', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        showAlert('Ocorreu um erro ao buscar dados do produto', 'danger');
+    });
+}
+
+window.addDefaultVariacaoField = function(variacoesDiv) {
+    const index = variacoesDiv.querySelectorAll('.variacao-item').length;
+    const newItem = `
+        <div class="variacao-item row mb-2">
+            <div class="col-md-6">
+                <input type="text" class="form-control" name="variacoes[${index}][nome]" 
+                       placeholder="Nome da Variação" required>
+            </div>
+            <div class="col-md-4">
+                <input type="number" class="form-control" name="variacoes[${index}][quantidade]" 
+                       placeholder="Quantidade" min="0" required>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-danger remover-variacao">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    variacoesDiv.insertAdjacentHTML('beforeend', newItem);
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar/Remover variação no formulário de novo produto
+    const addVariacaoNovoButton = document.getElementById('addVariacaoNovoProduto');
+    if (addVariacaoNovoButton) {
+        addVariacaoNovoButton.addEventListener('click', function() {
+            const variacoesDiv = document.getElementById('variacoesNovoProduto');
+            addDefaultVariacaoField(variacoesDiv);
         });
     }
 
-    // Helper function to add a default variation field
-    function addDefaultVariacaoField(variacoesDiv) {
-         const index = variacoesDiv.querySelectorAll('.variacao-item').length;
-         const newItem = `
-             <div class=\"variacao-item row mb-2\">\n
-                 <div class=\"col-md-6\">\n
-                     <input type=\"text\" class=\"form-control\" name=\"variacoes[${index}][nome]\" placeholder=\"Nome da Variação\" required>\n
-                 </div>\n
-                 <div class=\"col-md-4\">\n
-                     <input type=\"number\" class=\"form-control\" name=\"variacoes[${index}][quantidade]\" placeholder=\"Quantidade\" min=\"0\" required>\n
-                 </div>\n
-                 <div class=\"col-md-2\">\n
-                     <button type=\"button\" class=\"btn btn-danger remover-variacao\"><i class=\"fas fa-times\"></i></button>\n
-                 </div>\n
-             </div>
-         `;
-         variacoesDiv.insertAdjacentHTML('beforeend', newItem);
+    // Adicionar/Remover variação no formulário de editar produto
+    const addVariacaoEditarButton = document.getElementById('addVariacaoEditarProduto');
+    if (addVariacaoEditarButton) {
+        addVariacaoEditarButton.addEventListener('click', function() {
+            const variacoesDiv = document.getElementById('variacoesEditarProduto');
+            addDefaultVariacaoField(variacoesDiv);
+        });
     }
 
-    // Function to reset the product form for creation
-    function resetProductForm() {
-        const form = document.getElementById('formProduto');
-        if (form) {
-            form.reset();
-            form.action = 'index.php?page=admin'; // Ensure correct action URL for standard submission
-            form.querySelector('input[name="action"]').value = 'criar';
-            // Remove hidden ID input if it exists
-            const idInput = form.querySelector('input[name="id"]');
-            if (idInput) {
-                idInput.remove();
-            }
-            // Clear and add a default variation field
-            const variacoesDiv = document.getElementById('variacoesProduto');
-             if(variacoesDiv) { // Add a check if the element exists
-                 variacoesDiv.innerHTML = '<h6>Variações de Estoque</h6>';
-                 addDefaultVariacaoField(variacoesDiv);
-             }
-
-             // Reset modal title
-            const modal = document.getElementById('modalProduto');
-            if (modal) { // Add a check if modal exists
-                 modal.querySelector('.modal-title').textContent = 'Novo Produto';
+    // Remover variação (funciona para ambos os formulários)
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remover-variacao') || e.target.parentElement.classList.contains('remover-variacao')) {
+            const itemToRemove = e.target.closest('.variacao-item');
+            if (itemToRemove) {
+                itemToRemove.remove();
             }
         }
-    }
-
-    // Listen for the modal show event to reset the form
-    const productModal = document.getElementById('modalProduto');
-    if (productModal) {
-        productModal.addEventListener('show.bs.modal', function (event) {
-            // Check if the modal is being opened by the 'Novo Produto' button
-            const relatedButton = event.relatedTarget;
-            // Assuming your 'Novo Produto' button has the ID 'novoProdutoBtn'
-            if (relatedButton && relatedButton.id === 'novoProdutoBtn') {
-                 resetProductForm();
-            } else { // If opened by edit button, reset then populate
-                 resetProductForm(); // Start with a clean form
-                 // The editProduct function will be called separately and will populate the form
-            }
-        });
-    }
-
-    // Add a click listener to the submit button for debugging
-    const saveProductButton = document.querySelector('#modalProduto .modal-footer .btn-primary[type="submit"]');
-    if (saveProductButton) {
-        saveProductButton.addEventListener('click', function() {
-            const form = document.getElementById('formProduto');
-            if (form) {
-                console.log('Debug Form Action:', form.action);
-                const actionInput = form.querySelector('input[name="action"]');
-                console.log('Debug Hidden Action Input Value:', actionInput ? actionInput.value : 'Not Found');
-            }
-        });
-    }
-
-    // Função para excluir produto
-    function excluirProduto(id) {
-        if (confirm('Tem certeza que deseja excluir este produto?')) {
-            fetch(`actions/produto.php?action=excluir&id=${id}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert(data.message, 'success');
-                    location.reload(); // Recarrega a página para ver a lista atualizada
-                } else {
-                    showAlert(data.message, 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                showAlert('Ocorreu um erro ao excluir o produto.', 'danger');
-            });
-        }
-    }
-
-    // --- Pedidos --- //
+    });
 
     // Função para ver detalhes do pedido (AJAX)
-    function verPedido(id) {
+    window.verPedido = function(id) {
+        console.log('Buscando detalhes do pedido:', id);
+        
         fetch(`actions/pedido.php?action=buscar&id=${id}`)
         .then(response => response.json())
         .then(data => {
+            console.log('Dados recebidos:', data);
+            
             if (data.success) {
                 const pedido = data.data;
                 let detalhesHtml = `
-                    <p><strong>ID do Pedido:</strong> ${pedido.id}</p>
-                    <p><strong>Cliente:</strong> ${htmlspecialchars(pedido.cliente_nome)}</p>
-                    <p><strong>Email:</strong> ${htmlspecialchars(pedido.cliente_email)}</p>
-                    <p><strong>Telefone:</strong> ${htmlspecialchars(pedido.cliente_telefone ?? 'N/A')}</p>
-                    <p><strong>Endereço:</strong> ${htmlspecialchars(pedido.endereco_logradouro)}, ${htmlspecialchars(pedido.endereco_numero)} ${htmlspecialchars(pedido.endereco_complemento ?? '')}, ${htmlspecialchars(pedido.endereco_bairro)}, ${htmlspecialchars(pedido.endereco_cidade)} - ${htmlspecialchars(pedido.endereco_estado)} CEP: ${htmlspecialchars(pedido.endereco_cep)}</p>
-                    <p><strong>Subtotal:</strong> ${htmlspecialchars(pedido.subtotal)}</p>
-                    <p><strong>Frete:</strong> ${htmlspecialchars(pedido.frete)}</p>
-                    <p><strong>Desconto:</strong> ${htmlspecialchars(pedido.desconto)}</p>
-                    <p><strong>Total:</strong> ${htmlspecialchars(pedido.total)}</p>
-                    <p><strong>Status:</strong> ${htmlspecialchars(pedido.status)}</p>
-                    <p><strong>Data:</strong> ${htmlspecialchars(pedido.data_criacao)}</p>
-                    <h6>Itens do Pedido:</h6>
-                    <ul>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informações do Cliente</h6>
+                            <p><strong>Nome:</strong> ${htmlspecialchars(pedido.cliente_nome)}</p>
+                            <p><strong>Email:</strong> ${htmlspecialchars(pedido.cliente_email)}</p>
+                            <p><strong>Telefone:</strong> ${htmlspecialchars(pedido.cliente_telefone || 'N/A')}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Endereço de Entrega</h6>
+                            <p>${htmlspecialchars(pedido.endereco_logradouro)}, ${htmlspecialchars(pedido.endereco_numero)}</p>
+                            ${pedido.endereco_complemento ? `<p>${htmlspecialchars(pedido.endereco_complemento)}</p>` : ''}
+                            <p>${htmlspecialchars(pedido.endereco_bairro)}</p>
+                            <p>${htmlspecialchars(pedido.endereco_cidade)} - ${htmlspecialchars(pedido.endereco_estado)}</p>
+                            <p>CEP: ${htmlspecialchars(pedido.endereco_cep)}</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6>Itens do Pedido</h6>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Variação</th>
+                                <th>Quantidade</th>
+                                <th>Preço Unit.</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
                 
                 if (pedido.itens && pedido.itens.length > 0) {
                     pedido.itens.forEach(item => {
+                        const subtotal = item.quantidade * item.preco_unitario;
                         detalhesHtml += `
-                            <li>${htmlspecialchars(item.quantidade)} x ${htmlspecialchars(item.produto_nome)} (${htmlspecialchars(item.variacao)}) - ${htmlspecialchars(item.preco_unitario)}</li>
+                            <tr>
+                                <td>${htmlspecialchars(item.produto_nome)}</td>
+                                <td>${htmlspecialchars(item.variacao)}</td>
+                                <td>${item.quantidade}</td>
+                                <td>R$ ${parseFloat(item.preco_unitario).toFixed(2)}</td>
+                                <td>R$ ${subtotal.toFixed(2)}</td>
+                            </tr>
                         `;
                     });
                 } else {
-                    detalhesHtml += `<li>Nenhum item encontrado.</li>`;
+                    detalhesHtml += `<tr><td colspan="5" class="text-center">Nenhum item encontrado</td></tr>`;
                 }
                 
-                detalhesHtml += `</ul>`;
+                detalhesHtml += `
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+                                <td>R$ ${parseFloat(pedido.subtotal).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end"><strong>Frete:</strong></td>
+                                <td>R$ ${parseFloat(pedido.frete).toFixed(2)}</td>
+                            </tr>
+                            ${pedido.desconto > 0 ? `
+                            <tr class="text-success">
+                                <td colspan="4" class="text-end"><strong>Desconto:</strong></td>
+                                <td>-R$ ${parseFloat(pedido.desconto).toFixed(2)}</td>
+                            </tr>
+                            ` : ''}
+                            <tr>
+                                <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                <td><strong>R$ ${parseFloat(pedido.total).toFixed(2)}</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> <span class="badge bg-${getStatusColor(pedido.status)}">${htmlspecialchars(pedido.status)}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Data do Pedido:</strong> ${new Date(pedido.data_criacao).toLocaleString()}</p>
+                        </div>
+                    </div>
+                `;
                 
                 document.getElementById('detalhesPedido').innerHTML = detalhesHtml;
-                const modal = new bootstrap.Modal(document.getElementById('modalVerPedido'));
-                modal.show();
+            } else {
+                document.getElementById('detalhesPedido').innerHTML = `
+                    <div class="alert alert-danger">
+                        ${data.message || 'Erro ao carregar detalhes do pedido'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            document.getElementById('detalhesPedido').innerHTML = `
+                <div class="alert alert-danger">
+                    Ocorreu um erro ao buscar detalhes do pedido
+                </div>
+            `;
+        });
+    }
+
+    // Função auxiliar para determinar a cor do badge de status
+    function getStatusColor(status) {
+        switch (status) {
+            case 'pendente': return 'warning';
+            case 'aprovado': return 'info';
+            case 'enviado': return 'primary';
+            case 'entregue': return 'success';
+            case 'cancelado': return 'danger';
+            default: return 'secondary';
+        }
+    }
+
+    // Função para atualizar status do pedido
+    window.atualizarStatus = function(id) {
+        const statusOptions = ['pendente', 'aprovado', 'enviado', 'entregue', 'cancelado'];
+        const statusLabels = {
+            'pendente': 'Pendente',
+            'aprovado': 'Aprovado',
+            'enviado': 'Enviado',
+            'entregue': 'Entregue',
+            'cancelado': 'Cancelado'
+        };
+
+        // Criar um select com as opções de status
+        const select = document.createElement('select');
+        select.className = 'form-select';
+        statusOptions.forEach(status => {
+            const option = document.createElement('option');
+            option.value = status;
+            option.textContent = statusLabels[status];
+            select.appendChild(option);
+        });
+
+        // Substituir o prompt por um modal do Bootstrap
+        const modalHtml = `
+            <div class="modal fade" id="modalAtualizarStatus" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Atualizar Status do Pedido</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="novoStatus" class="form-label">Novo Status</label>
+                                <select id="novoStatus" class="form-select">
+                                    ${statusOptions.map(status => 
+                                        `<option value="${status}">${statusLabels[status]}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" onclick="confirmarAtualizacaoStatus(${id})">
+                                Atualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Adicionar o modal ao body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Mostrar o modal
+        const modal = new bootstrap.Modal(document.getElementById('modalAtualizarStatus'));
+        modal.show();
+
+        // Remover o modal do DOM quando for fechado
+        document.getElementById('modalAtualizarStatus').addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+    }
+
+    // Função para confirmar a atualização do status
+    window.confirmarAtualizacaoStatus = function(id) {
+        const novoStatus = document.getElementById('novoStatus').value;
+        
+        fetch(`actions/pedido.php?action=atualizar_status&id=${id}&status=${novoStatus}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                // Fechar o modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalAtualizarStatus'));
+                modal.hide();
+                // Recarregar a página para atualizar a lista
+                location.reload();
             } else {
                 showAlert(data.message, 'danger');
             }
         })
         .catch(error => {
             console.error('Erro:', error);
-            showAlert('Ocorreu um erro ao buscar detalhes do pedido.', 'danger');
+            showAlert('Ocorreu um erro ao atualizar o status.', 'danger');
         });
-    }
-
-    // Função para atualizar status do pedido (Prompt simples por enquanto)
-    function atualizarStatus(id) {
-        const novoStatus = prompt('Digite o novo status (pendente, aprovado, enviado, entregue, cancelado):');
-        if (novoStatus) {
-            fetch(`actions/pedido.php?action=atualizarStatus&id=${id}&status=${novoStatus}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert(data.message, 'success');
-                    location.reload(); // Recarrega a página para ver a lista atualizada
-                } else {
-                    showAlert(data.message, 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                showAlert('Ocorreu um erro ao atualizar o status.', 'danger');
-            });
-        }
-    }
-
-    // --- Cupons --- //
-
-    // Tratar submissão do formulário de cupom via AJAX
-    const formCupom = document.getElementById('formCupom');
-    if (formCupom) {
-        console.log('formCupom element found');
-        // Removido o event listener de submit via AJAX
-        // formCupom.addEventListener('submit', function(e) {
-        //     console.log('Cupom form submitted');
-        //     e.preventDefault();
-        //     const form = e.target;
-        //     const formData = new FormData(form);
-            
-        //     fetch(form.action, {
-        //         method: form.method,
-        //         body: formData
-        //     })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.success) {
-        //             showAlert(data.message, 'success');
-        //             // Fechar modal e recarregar lista de cupons (opcional)
-        //             const modal = bootstrap.Modal.getInstance(document.getElementById('modalCupom'));
-        //             modal.hide();
-        //             location.reload(); // Recarrega a página para ver a lista atualizada
-        //         } else {
-        //             showAlert(data.message, 'danger');
-        //         }
-        //     })
-        //     .catch(error => {
-        //         console.error('Erro:', error);
-        //         showAlert('Ocorreu um erro ao processar a requisição.', 'danger');
-        //     });
-        // });
-    } else {
-         console.log('formCupom element NOT found');
     }
 
     // Função para excluir cupom

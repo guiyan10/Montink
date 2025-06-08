@@ -1,48 +1,61 @@
 <?php
-require_once 'config/database.php';
-require_once 'models/Model.php';
+require_once 'config/config.php';
 require_once 'models/Pedido.php';
 
+// Set content type to JSON
 header('Content-Type: application/json');
 
-// Verifica se é uma requisição POST
+// Verify webhook signature
+function verifyWebhookSignature($payload, $signature) {
+    $expectedSignature = hash_hmac('sha256', $payload, WEBHOOK_SECRET);
+    return hash_equals($expectedSignature, $signature);
+}
+
+// Get raw POST data
+$payload = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? '';
+
+// Verify request method
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['error' => 'Método não permitido']);
+    echo json_encode(['error' => 'Method not allowed']);
     exit;
 }
 
-// Obtém o corpo da requisição
-$data = json_decode(file_get_contents('php://input'), true);
-
-// Valida os dados recebidos
-if (!isset($data['pedido_id']) || !isset($data['status'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Dados inválidos']);
+// Verify webhook signature
+if (!verifyWebhookSignature($payload, $signature)) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Invalid signature']);
     exit;
 }
 
 try {
+    // Parse JSON payload
+    $data = json_decode($payload, true);
+    
+    if (!$data || !isset($data['id']) || !isset($data['status'])) {
+        throw new Exception('Invalid payload format');
+    }
+    
     $pedido = new Pedido();
     
-    // Se o status for "cancelado", remove o pedido
+    // Handle order status update
     if ($data['status'] === 'cancelado') {
-        if ($pedido->delete($data['pedido_id'])) {
-            echo json_encode(['success' => true, 'message' => 'Pedido cancelado com sucesso']);
+        // Delete order if status is cancelled
+        if ($pedido->delete($data['id'])) {
+            echo json_encode(['message' => 'Order deleted successfully']);
         } else {
-            http_response_code(404);
-            echo json_encode(['error' => 'Pedido não encontrado']);
+            throw new Exception('Order not found');
         }
     } else {
-        // Atualiza o status do pedido
-        if ($pedido->atualizarStatus($data['pedido_id'], $data['status'])) {
-            echo json_encode(['success' => true, 'message' => 'Status atualizado com sucesso']);
+        // Update order status
+        if ($pedido->atualizarStatus($data['id'], $data['status'])) {
+            echo json_encode(['message' => 'Order status updated successfully']);
         } else {
-            http_response_code(404);
-            echo json_encode(['error' => 'Pedido não encontrado']);
+            throw new Exception('Order not found');
         }
     }
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Erro interno do servidor: ' . $e->getMessage()]);
+    http_response_code(400);
+    echo json_encode(['error' => $e->getMessage()]);
 } 

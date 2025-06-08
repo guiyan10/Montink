@@ -26,37 +26,40 @@ class Utils {
         return $data;
     }
     
-    public static function enviarEmail($para, $assunto, $mensagem) {
+    public static function enviarEmail($destinatario, $assunto, $mensagem) {
         $mail = new PHPMailer(true);
         
         try {
-            // Configurações do Servidor SMTP (PREENCHA SEUS DADOS AQUI!)
-            // $mail->SMTPDebug = 2; // Ativar saída de debug detalhada (para testes)
-            $mail->isSMTP(); // Usar SMTP para envio
-            $mail->Host       = 'smtp.gmail.com'; // Ex: smtp.gmail.com, smtp-mail.outlook.com
-            $mail->SMTPAuth   = true; // Habilitar autenticação SMTP
-            $mail->Username   = 'guilhermeyan.leite12@gmail.com'; // Seu e-mail do SMTP
-            $mail->Password   = 'obrs jkpc jfxf hhbn'; // Sua senha do SMTP (ou senha de app)
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Habilitar criptografia TLS
-            $mail->Port       = 587; // Porta TCP para conexão (587 para TLS, 465 para SSL)
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com'; // Configure your SMTP server
+            $mail->SMTPAuth = true;
+            $mail->Username = 'your-email@gmail.com'; // Configure your email
+            $mail->Password = 'your-app-password'; // Configure your password
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
             $mail->CharSet = 'UTF-8';
 
-            // Remetente e Destinatários
-            $mail->setFrom('guilhermeyan.leite12@gmail.com', 'Guiyan Leite'); // E-mail e nome do remetente
-            $mail->addAddress($para); // Adicionar um destinatário
+            // Recipients
+            $mail->setFrom('your-email@gmail.com', 'Mini ERP');
+            $mail->addAddress($destinatario);
+            $mail->addReplyTo('your-email@gmail.com', 'Mini ERP');
 
-            // Conteúdo
-            $mail->isHTML(true); // Definir formato de e-mail para HTML
+            // Content
+            $mail->isHTML(true);
             $mail->Subject = $assunto;
-            $mail->Body    = $mensagem;
-            $mail->AltBody = strip_tags($mensagem); // Corpo em texto plano para clientes sem HTML
+            $mail->Body = $mensagem;
+            $mail->AltBody = strip_tags($mensagem);
 
+            // Log email attempt
+            error_log("Attempting to send email to: {$destinatario}");
+            
             $mail->send();
-            return true; // E-mail enviado com sucesso
+            error_log("Email sent successfully to: {$destinatario}");
+            return true;
         } catch (Exception $e) {
-            // Capture e logue o erro detalhado do PHPMailer
-            error_log("Erro ao enviar e-mail (PHPMailer): {$mail->ErrorInfo}");
-            return false; // Falha no envio
+            error_log("Failed to send email to {$destinatario}. Error: {$mail->ErrorInfo}");
+            return false;
         }
     }
     
@@ -65,7 +68,7 @@ class Utils {
     }
     
     public static function gerarTemplateEmailPedido($pedido, $itens) {
-        // Use null coalescing operator (??) para evitar warnings se algum campo for null/indefinido
+        // Use null coalescing operator (??) to avoid warnings if some field is null/undefined
         $logradouro = $pedido['endereco_logradouro'] ?? '';
         $numero = $pedido['endereco_numero'] ?? '';
         $complemento = $pedido['endereco_complemento'] ?? '';
@@ -75,7 +78,7 @@ class Utils {
         $cep = $pedido['endereco_cep'] ?? '';
         $telefone = $pedido['cliente_telefone'] ?? 'Não informado';
 
-        // Formata o endereço completo, incluindo complemento se existir
+        // Format complete address, including complement if it exists
         $endereco_completo = $logradouro . ', ' . $numero;
         if (!empty($complemento)) {
             $endereco_completo .= ' - ' . $complemento;
@@ -83,19 +86,21 @@ class Utils {
         $endereco_completo .= ' - ' . $bairro;
         $endereco_completo .= ', ' . $cidade . ' - ' . $estado;
 
-
         $html = "
         <html>
         <head>
             <style>
-                body { font-family: Arial, sans-serif; }
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #f8f9fa; padding: 20px; text-align: center; }
-                .content { padding: 20px; }
-                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { padding: 10px; border: 1px solid #ddd; }
+                .header { background: #f8f9fa; padding: 20px; text-align: center; border-radius: 5px; }
+                .content { padding: 20px; background: #fff; border-radius: 5px; margin-top: 20px; }
+                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; margin-top: 20px; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
                 th { background: #f8f9fa; }
+                .total { font-weight: bold; font-size: 1.2em; margin-top: 20px; }
+                .status { display: inline-block; padding: 5px 10px; border-radius: 3px; background: #28a745; color: white; }
+                .alert { padding: 15px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; margin: 20px 0; }
             </style>
         </head>
         <body>
@@ -118,7 +123,6 @@ class Utils {
                         </tr>";
         
         foreach ($itens as $item) {
-            // Calcular subtotal do item caso não venha nos dados (embora já esteja vindo do join)
             $item_subtotal = ($item['quantidade'] ?? 0) * ($item['preco_unitario'] ?? 0);
             $html .= "
                         <tr>
@@ -136,16 +140,21 @@ class Utils {
                     <h3>Resumo do Pedido:</h3>
                     <p>Subtotal: " . self::formatarPreco($pedido['subtotal'] ?? 0) . "</p>
                     <p>Frete: " . self::formatarPreco($pedido['frete'] ?? 0) . "</p>
-                     <p>Desconto: " . self::formatarPreco($pedido['desconto'] ?? 0) . "</p>
-                    <p><strong>Total: " . self::formatarPreco($pedido['total'] ?? 0) . "</strong></p>
+                    <p>Desconto: " . self::formatarPreco($pedido['desconto'] ?? 0) . "</p>
+                    <p class='total'>Total: " . self::formatarPreco($pedido['total'] ?? 0) . "</p>
                     
                     <h3>Endereço de Entrega:</h3>
                     <p>{$endereco_completo}</p>
                     <p>CEP: {$cep}</p>
                     <p>Telefone: {$telefone}</p>
+
+                    <div class='alert'>
+                        <strong>Importante:</strong> Este é um e-mail automático. Por favor, não responda a esta mensagem.
+                        Para qualquer dúvida, entre em contato com nosso suporte.
+                    </div>
                 </div>
                 <div class='footer'>
-                    <p>Este é um e-mail automático, por favor não responda.</p>
+                    <p>© " . date('Y') . " Mini ERP. Todos os direitos reservados.</p>
                 </div>
             </div>
         </body>

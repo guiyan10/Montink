@@ -137,24 +137,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = $_GET['action'] ?? '';
     
-    if ($action === 'atualizar_status') {
-        $id_pedido = $_GET['id'] ?? 0;
-        $status = $_GET['status'] ?? '';
-        
-        if ($id_pedido && $status) {
-            try {
-                if ($pedido->atualizarStatus($id_pedido, $status)) {
-                    $response['success'] = true;
-                    $response['message'] = 'Status atualizado com sucesso';
-                } else {
-                    $response['message'] = 'Erro ao atualizar status';
+    switch ($action) {
+        case 'buscar':
+            $id = $_GET['id'] ?? 0;
+            if ($id) {
+                try {
+                    $pedido_info = $pedido->getPedidoComItens($id);
+                    if ($pedido_info) {
+                        $response['success'] = true;
+                        $response['data'] = $pedido_info[0];
+                        $response['data']['itens'] = $pedido_info;
+                    } else {
+                        $response['message'] = 'Pedido não encontrado';
+                    }
+                } catch (Exception $e) {
+                    $response['message'] = 'Erro: ' . $e->getMessage();
                 }
-            } catch (Exception $e) {
-                $response['message'] = 'Erro: ' . $e->getMessage();
+            } else {
+                $response['message'] = 'ID inválido';
             }
-        } else {
-            $response['message'] = 'Dados inválidos';
-        }
+            break;
+            
+        case 'atualizar_status':
+            $id_pedido = $_GET['id'] ?? 0;
+            $status = $_GET['status'] ?? '';
+            
+            if ($id_pedido && $status) {
+                try {
+                    if ($pedido->atualizarStatus($id_pedido, $status)) {
+                        $response['success'] = true;
+                        $response['message'] = 'Status atualizado com sucesso';
+                    } else {
+                        $response['message'] = 'Erro ao atualizar status';
+                    }
+                } catch (Exception $e) {
+                    $response['message'] = 'Erro: ' . $e->getMessage();
+                }
+            } else {
+                $response['message'] = 'Dados inválidos';
+            }
+            break;
+            
+        default:
+            $response['message'] = 'Ação inválida';
     }
 }
 

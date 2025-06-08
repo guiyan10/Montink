@@ -27,15 +27,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
             }
             
-            $cupom_info = $cupom->validarCupom($codigo, $subtotal);
-            
-            if ($cupom_info) {
-                $_SESSION['cupom'] = $codigo;
-                $response['success'] = true;
-                $response['message'] = 'Cupom aplicado com sucesso';
-                $response['desconto'] = $cupom_info['valor_desconto'];
-            } else {
-                $response['message'] = 'Cupom inválido ou expirado';
+            try {
+                $cupom_info = $cupom->validarCupom($codigo, $subtotal);
+                
+                if ($cupom_info) {
+                    $_SESSION['cupom'] = $codigo;
+                    $response['success'] = true;
+                    $response['message'] = 'Cupom aplicado com sucesso';
+                    $response['desconto'] = $cupom_info['valor_desconto'];
+                    $response['cupom'] = $cupom_info;
+                } else {
+                    $response['message'] = 'Cupom inválido, expirado ou valor mínimo não atingido';
+                }
+            } catch (Exception $e) {
+                error_log("Erro ao validar cupom: " . $e->getMessage());
+                $response['message'] = 'Erro ao validar cupom';
             }
             break;
             

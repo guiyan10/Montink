@@ -107,53 +107,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_GET['action'] ?? '';
     error_log("GET request, action: " . $action);
     
-    if ($action === 'excluir') {
-        error_log("Action: excluir");
-        $id = $_GET['id'] ?? 0;
-        error_log("ID to delete: " . $id);
-        
-        if ($id) {
-            try {
-                if ($produto->delete($id)) {
-                    $response['success'] = true;
-                    $response['message'] = 'Produto excluído com sucesso';
-                    error_log("Produto excluído com sucesso (ID: " . $id . ")");
-                } else {
-                    $response['message'] = 'Erro ao excluir produto';
-                    error_log("Erro ao excluir produto na model (ID: " . $id . ")");
+    switch ($action) {
+        case 'buscar':
+            $id = $_GET['id'] ?? 0;
+            error_log("Action: buscar (ID: " . $id . ")");
+            
+            if ($id) {
+                try {
+                    $produto_data = $produto->find($id);
+                    if ($produto_data) {
+                        $response['success'] = true;
+                        $response['data'] = $produto_data;
+                        error_log("Produto encontrado: " . print_r($produto_data, true));
+                    } else {
+                        $response['message'] = 'Produto não encontrado';
+                        error_log("Produto não encontrado (ID: " . $id . ")");
+                    }
+                } catch (Exception $e) {
+                    $response['message'] = 'Erro: ' . $e->getMessage();
+                    error_log("Exception ao buscar produto (ID: " . $id . "): " . $e->getMessage());
                 }
-            } catch (Exception $e) {
-                $response['message'] = 'Erro: ' . $e->getMessage();
-                error_log("Exception ao excluir produto (ID: " . $id . "): " . $e->getMessage());
+            } else {
+                $response['message'] = 'ID inválido';
+                error_log("ID inválido para buscar produto");
             }
-        } else {
-            $response['message'] = 'ID inválido';
-            error_log("ID inválido para excluir produto");
-        }
-    } elseif ($action === 'buscar') {
-        error_log("Action: buscar");
-        $id = $_GET['id'] ?? 0;
-        error_log("ID to fetch: " . $id);
-        
-        if ($id) {
-            try {
-                $produto_info = $produto->find($id);
-                if ($produto_info) {
-                    $response['success'] = true;
-                    $response['data'] = $produto_info;
-                    error_log("Produto encontrado (ID: " . $id . "): " . print_r($produto_info, true));
-                } else {
-                    $response['message'] = 'Produto não encontrado';
-                    error_log("Produto não encontrado (ID: " . $id . ")");
+            break;
+            
+        case 'excluir':
+            $id = $_GET['id'] ?? 0;
+            error_log("Action: excluir (ID: " . $id . ")");
+            
+            if ($id) {
+                try {
+                    if ($produto->delete($id)) {
+                        $response['success'] = true;
+                        $response['message'] = 'Produto excluído com sucesso';
+                        error_log("Produto excluído com sucesso (ID: " . $id . ")");
+                    } else {
+                        $response['message'] = 'Erro ao excluir produto';
+                        error_log("Erro ao excluir produto na model (ID: " . $id . ")");
+                    }
+                } catch (Exception $e) {
+                    $response['message'] = 'Erro: ' . $e->getMessage();
+                    error_log("Exception ao excluir produto (ID: " . $id . "): " . $e->getMessage());
                 }
-            } catch (Exception $e) {
-                $response['message'] = 'Erro: ' . $e->getMessage();
-                error_log("Exception ao buscar produto (ID: " . $id . "): " . $e->getMessage());
+            } else {
+                $response['message'] = 'ID inválido';
+                error_log("ID inválido para excluir produto");
             }
-        } else {
-            $response['message'] = 'ID inválido';
-            error_log("ID inválido para buscar produto");
-        }
+            break;
     }
 }
 

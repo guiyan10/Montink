@@ -7,6 +7,18 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            flex: 1 0 auto;
+        }
         .navbar-brand {
             font-weight: bold;
         }
@@ -22,6 +34,10 @@
             border-radius: 50%;
             padding: 2px 6px;
             font-size: 12px;
+        }
+        footer {
+            flex-shrink: 0;
+            width: 100%;
         }
     </style>
 </head>

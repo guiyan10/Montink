@@ -38,16 +38,44 @@
 
         // Função para validar cupom
         function validarCupom(codigo) {
+            if (!codigo) {
+                alert('Por favor, digite o código do cupom');
+                return;
+            }
+
+            const subtotal = parseFloat($('input[name="subtotal"]').val() || 0);
+            if (subtotal <= 0) {
+                alert('Valor do pedido inválido');
+                return;
+            }
+
             $.post('actions/cupom.php', { 
                 action: 'validar',
                 codigo: codigo,
-                subtotal: parseFloat($('input[name="subtotal"]').val() || 0)
+                subtotal: subtotal
             }, function(response) {
                 if (response.success) {
+                    // Atualiza o valor do desconto e total na página
+                    if (response.desconto > 0) {
+                        // Atualiza o valor do desconto
+                        $('.desconto-valor').text('-R$ ' + response.desconto.toFixed(2));
+                        $('.desconto-row').show();
+                        
+                        // Atualiza o total
+                        const novoTotal = subtotal - response.desconto;
+                        $('.total-valor').text('R$ ' + novoTotal.toFixed(2));
+                    }
+                    
+                    // Mostra mensagem de sucesso
+                    alert(response.message);
+                    
+                    // Recarrega a página para atualizar todos os valores
                     location.reload();
                 } else {
                     alert(response.message);
                 }
+            }).fail(function() {
+                alert('Erro ao validar cupom. Por favor, tente novamente.');
             });
         }
     </script>
